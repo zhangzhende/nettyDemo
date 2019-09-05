@@ -1,0 +1,23 @@
+NIO的编程虽然会更加复杂，但是他有如下几个优点：
+1.客户端发起的连接操作是异步的，可以通过在多路复用器注册op_connect等待后续结果，
+不需要像之前的客户端那样呗同步阻塞。
+
+2.SocketChannel的读写操作都是异步的，如果没有可读写的数据他就不会同步等待，
+直接返回，这样IO通信线程就可以处理其他的链路，不需要同步等待这个链路可用。
+
+3线程模型的优化，jdk的selector在Linux等主流操作系统上通过epoll实现，没有句柄的限制。
+适合做高性能高负载的网络服务器。
+
+
+NIO服务端开发步骤：
+1.创建ServerSocketChannel，配置为非阻塞模式
+2.绑定监听，配置TCP参数。例如backlog大小
+3.创建一个独立的IO线程，用于轮询多路复用器Selector
+4.创建Selector，将之前创建的ServerSocketChannel注册到Selector上，监听SelectionKey.ACCEPT
+5.启动IO线程，在循环体中执行Selector.select()方法，轮询就绪的Channel。
+6.当轮询到了处于就绪状态的Channel时，需要对其进行判断，如果是OP_ACCEPT 状态，说明是新的客户端接入，则
+调用ServerSocketChannel.accept()方法接受新的客户端
+7.设置新接入的客户端链路SocketChannel为非阻塞模式，配置其他的一些TCP参数
+8.将SocketChannel注册到Selector，监听OP_READ操作位
+9.如果轮询的Channel为OP_READ则说明SocketChannel中有新的就绪数据包需要读取，则构造ByteBuffer对象，读取数据包
+10.如果轮询的Channel为OP_WRITE，说明还有数据没有发送完，需要继续发送

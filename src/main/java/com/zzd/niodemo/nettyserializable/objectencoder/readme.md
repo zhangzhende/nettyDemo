@@ -1,0 +1,3 @@
+使用netty的ObejctEncoder和ObjectDecoder来序列化
+
+而且粘包拆包并无影响
